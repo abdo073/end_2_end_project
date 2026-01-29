@@ -23,7 +23,7 @@ pipeline {
                 script {
                     sh """
                     echo "Pulling Wazuh Docker image..."
-                    docker pull wazuh/wazuh:4.14.2
+                    docker pull wazuh/wazuh:latest
 
                     echo "Running Wazuh container..."
                     docker run --rm -d --name wazuh-test \\
