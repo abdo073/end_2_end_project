@@ -29,7 +29,7 @@ pipeline {
                     docker run --rm -d --name wazuh-test \\
                         -p 1514:1514 \\
                         -v ${LOG_DIR}:/var/ossec/logs \\
-                        wazuh/wazuh:4.14.2
+                        wazuh/wazuh:latest
 
                     # Optional: run a test scan inside container
                     echo "Running logtest inside Wazuh container..."
