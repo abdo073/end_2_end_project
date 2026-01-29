@@ -1,0 +1,42 @@
+name: Wazuh Security Scan
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  wazuh-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Set up Docker
+        uses: docker/setup-buildx-action@v2
+
+      - name: Pull Wazuh Docker Images
+        run: |
+          docker pull wazuh/wazuh-indexer:4.3.10
+          docker pull wazuh/wazuh-manager:4.3.10
+          docker pull wazuh/wazuh-dashboard:4.3.10
+
+      - name: Run Wazuh Stack
+        run: |
+          docker network create wazuh-net || true
+          docker run -d --name wazuh-indexer --network wazuh-net wazuh/wazuh-indexer:4.3.10
+          docker run -d --name wazuh-manager --network wazuh-net -v $GITHUB_WORKSPACE/logs:/var/ossec/logs wazuh/wazuh-manager:4.3.10
+          docker run -d --name wazuh-dashboard --network wazuh-net -p 5601:5601 wazuh/wazuh-dashboard:4.3.10
+
+      - name: Wait for Wazuh to start
+        run: sleep 30
+
+      - name: Run Security Log Test
+        run: |
+          docker exec wazuh-manager /var/ossec/bin/ossec-logtest < logs/sample.log
+
+      - name: Tear down Wazuh
+        run: |
+          docker stop wazuh-indexer wazuh-manager wazuh-dashboard
+          docker rm wazuh-indexer wazuh-manager wazuh-dashboard
