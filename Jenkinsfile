@@ -18,33 +18,26 @@ pipeline {
             }
         }
 
-        stage('Security Scan - Wazuh Docker') {
+      stage('Run Wazuh Docker Stack') {
             steps {
                 script {
                     sh """
-                    echo "Pulling Wazuh Docker image..."
-                    docker pull wazuh/wazuh:4.12.0
+                    docker pull wazuh/wazuh-indexer:4.3.10
+                    docker pull wazuh/wazuh-manager:4.3.10
+                    docker pull wazuh/wazuh-dashboard:4.3.10
 
-                    echo "Running Wazuh container..."
-                    docker run --rm -d --name wazuh-test \\
-                        -p 1514:1514 \\
-                        -v ${LOG_DIR}:/var/ossec/logs \\
-                        wazuh/wazuh:4.12.0
+                    docker network create wazuh-net || true
+                    docker run -d --name wazuh-indexer --network wazuh-net wazuh/wazuh-indexer:4.3.10
+                    docker run -d --name wazuh-manager --network wazuh-net -v ${LOG_DIR}:/var/ossec/logs wazuh/wazuh-manager:4.3.10
+                    docker run -d --name wazuh-dashboard --network wazuh-net -p 5601:5601 wazuh/wazuh-dashboard:4.3.10
 
-                    # Optional: run a test scan inside container
-                    echo "Running logtest inside Wazuh container..."
-                    docker exec wazuh-test /var/ossec/bin/ossec-logtest < ${LOG_DIR}/jenkins.log
+                    sleep 30
+                    docker exec wazuh-manager /var/ossec/bin/ossec-logtest < ${LOG_DIR}/sample.log
 
-                    echo "Stopping Wazuh container..."
-                    docker stop wazuh-test || true
+                    docker stop wazuh-indexer wazuh-manager wazuh-dashboard
+                    docker rm wazuh-indexer wazuh-manager wazuh-dashboard
                     """
                 }
-            }
-        }
-
-        stage('Post Scan') {
-            steps {
-                echo "Security scan finished. Check logs in ${LOG_DIR}."
             }
         }
     }
