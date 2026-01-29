@@ -23,13 +23,13 @@ pipeline {
                 script {
                     sh """
                     echo "Pulling Wazuh Docker image..."
-                    docker pull wazuh/wazuh:latest
+                    docker pull wazuh/wazuh:4.11.2
 
                     echo "Running Wazuh container..."
                     docker run --rm -d --name wazuh-test \\
                         -p 1514:1514 \\
                         -v ${LOG_DIR}:/var/ossec/logs \\
-                        wazuh/wazuh:latest
+                        wazuh/wazuh:4.11.2
 
                     # Optional: run a test scan inside container
                     echo "Running logtest inside Wazuh container..."
